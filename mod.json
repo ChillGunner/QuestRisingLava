@@ -1,0 +1,19 @@
+{
+    "_QPVersion": "0.1.0",
+    "name": "Rising Lava",
+    "id": "risinglava",
+    "author": "BoopetyDoopety",
+    "version": "1.0.0",
+    "packageId": "com.AnotherAxiom.GorillaTag",
+    "packageVersion": "1.0.4",
+    "type": "Gameplay",
+    "modFiles": [
+        "librisinglava.so"
+    ],
+    "libraryFiles": [
+        "libbeatsaber-hook_1_2_6.so", 
+        "libcustom-types.so"
+    ],
+    "fileCopies": [
+    ]
+}
