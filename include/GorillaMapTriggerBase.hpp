@@ -25,7 +25,7 @@ DECLARE_CLASS(MapLoader, GorillaMapTriggerBase, "UnityEngine", "MonoBehaviour", 
     public:
         TouchType touchType = TouchType::Any;
 
-    REGISTER_FUNCTION(GorillaMapTriggerBase,
+    REGISTER_FUNCTION(
         REGISTER_METHOD(OnTriggerEnter);
         REGISTER_METHOD(OnTriggerStay);
         REGISTER_METHOD(OnTriggerExit);

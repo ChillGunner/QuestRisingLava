@@ -20,11 +20,26 @@
     },
     {
       "id": "custom-types",
-      "versionRange": "*",
+      "versionRange": "0.8.3",
       "additionalData": {}
     },
     {
       "id": "libil2cpp",
+      "versionRange": "*",
+      "additionalData": {}
+    },
+    {
+      "id": "quest-cosmetic-loader",
+      "versionRange": "*",
+      "additionalData": {}
+    },
+    {
+      "id": "monkecodegen",
+      "versionRange": "*",
+      "additionalData": {}
+    },
+    {
+      "id": "monkecomputer",
       "versionRange": "*",
       "additionalData": {}
     }

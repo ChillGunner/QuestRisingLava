@@ -1,19 +1,19 @@
+#pragma once
 #include "custom-types/shared/macros.hpp"
+#include "UnityEngine/MonoBehaviour.hpp"
 
-DECLARE_CLASS(RisingLava, LavaManager, "UnityEngine", "MonoBehaviour", sizeof(Il2CppObject) + sizeof(void*),
+DECLARE_CLASS_CODEGEN(RisingLava, LavaManager, UnityEngine::MonoBehaviour,
     DECLARE_METHOD(void, Start);
     DECLARE_METHOD(void, Update);
     DECLARE_METHOD(void, LavaUp);
     DECLARE_METHOD(void, LavaReset);
-    DECLARE_METHOD(void, OnTriggerEnter, Il2CppObject* col);
-    DECLARE_METHOD(void, OnTriggerExit, Il2CppObject* col);
+    DECLARE_INSTANCE_FIELD_DEFAULT(UnityEngine::Vector3, startingPos, UnityEngine::Vector3(-50,-3,-50));
 
-    REGISTER_FUNCTION(LavaManager,
+    REGISTER_FUNCTION(
         REGISTER_METHOD(Start);
         REGISTER_METHOD(Update);
         REGISTER_METHOD(LavaUp);
         REGISTER_METHOD(LavaReset);
-        REGISTER_METHOD(OnTriggerExit);
-        REGISTER_METHOD(OnTriggerEnter);
+        REGISTER_FIELD(startingPos);
     )
 )

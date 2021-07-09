@@ -5,15 +5,29 @@
     "author": "BoopetyDoopety",
     "version": "1.0.0",
     "packageId": "com.AnotherAxiom.GorillaTag",
-    "packageVersion": "1.0.4",
+    "packageVersion": "1.0.9",
     "type": "Gameplay",
     "modFiles": [
         "librisinglava.so"
     ],
     "libraryFiles": [
-        "libbeatsaber-hook_1_2_6.so", 
-        "libcustom-types.so"
+        "libbeatsaber-hook_1_3_5.so"
+    ],
+    "dependencies": [
+        {
+            "id": "MonkeComputer",
+            "version": "1.5.2",
+            "downloadIfMissing": "https://github.com/RedBrumbler/MonkeComputer/releases/download/1.5.2/MonkeComputer.qmod"
+        }
     ],
     "fileCopies": [
+        {
+            "name": "LavaAsset",
+            "destination": "/sdcard/ModData/com.AnotherAxiom.GorillaTag/Mods/RisingLava/LavaAsset"
+        },
+        {
+            "name": "LavaVision",
+            "destination": "/sdcard/ModData/com.AnotherAxiom.GorillaTag/Mods/RisingLava/LavaVision"
+        }
     ]
 }

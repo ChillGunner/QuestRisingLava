@@ -4,15 +4,38 @@
 #include "beatsaber-hook/shared/utils/logging.hpp"
 
 // runmethod & findmethod, as well as field values
+#include "quest-cosmetic-loader/shared/CosmeticLoader.hpp"
 #include "beatsaber-hook/shared/utils/il2cpp-utils.hpp"
 #include "beatsaber-hook/shared/utils/typedefs.h"
 
 #include "custom-types/shared/register.hpp"
+#include "monkecodegen/include/UnityEngine/AssetBundle.hpp"
+#include "monkecodegen/include/UnityEngine/GameObject.hpp"
+#include "monkecodegen/include/UnityEngine/Transform.hpp"
+#include "monkecodegen/include/UnityEngine/Vector3.hpp"
+#include "monkecodegen/include/GlobalNamespace/PhotonNetworkController.hpp"
+
+#include "GorillaLocomotion/Player.hpp"
+
+#include "GlobalNamespace/GorillaPlaySpace.hpp"
+#include "GlobalNamespace/GorillaTagger.hpp"
+#include "GlobalNamespace/VRRig.hpp"
+#include "GlobalNamespace/VRMap.hpp"
+
+#include "UnityEngine/Vector3.hpp"
+#include "UnityEngine/Quaternion.hpp"
+#include "UnityEngine/Transform.hpp"
+#include "UnityEngine/PlayerPrefs.hpp"
+
+#include "monkecomputer/shared/GorillaUI.hpp"
+#include "monkecomputer/shared/CustomQueues.hpp"
 
 #include "LavaManager.hpp"
 #include "GorillaMapTriggerBase.hpp"
 #include "TagZone.hpp"
 #include "il2cpptypes.hpp"
+
+using namespace CosmeticsLoader;
 
 // our modinfo, used for making the logger
 static ModInfo modInfo;
@@ -36,37 +59,75 @@ typedef struct SendOptions {
 DEFINE_IL2CPP_ARG_TYPE(SendOptions, "ExitGames.Client.Photon", "SendOptions");
 DEFINE_IL2CPP_ARG_TYPE_GENERIC_CLASS(List, "System.Collections.Generic", "List`1");
 
+bool canBeTagged = true;
+
+UnityEngine::GameObject* lavaVision;
+UnityEngine::GameObject* lava;
+UnityEngine::Transform* lavaTransform;
+
+UnityEngine::Vector3 forestStart = UnityEngine::Vector3(-50,-3,-50);
+UnityEngine::Vector3 caveStart = UnityEngine::Vector3(-50,-20,-50);
+UnityEngine::Vector3 canyonStart = UnityEngine::Vector3(-100, -7, -150);
+
+RisingLava::LavaManager* lavaManager;
+
+
+//Stolen from Map Loader
+void TagLocalPlayer()
+    {
+        bool inRoom = *il2cpp_utils::RunMethod<bool>("Photon.Pun", "PhotonNetwork", "get_InRoom");
+        if (inRoom)
+        {
+            Il2CppObject* gorillaTagManager = *il2cpp_utils::GetFieldValue("", "GorillaTagManager", "instance");
+            static std::vector<Il2CppClass*> gameManagerKlass = {il2cpp_utils::GetClassFromName("", "GorillaGameManager")};
+            Il2CppObject* gameManager = *il2cpp_utils::RunGenericMethod(gorillaTagManager, "GetComponent", gameManagerKlass);
+            Il2CppObject* photonView = *il2cpp_utils::RunMethod("Photon.Pun", "PhotonView", "Get", gameManager);
+            
+            Il2CppObject* localPlayer = *il2cpp_utils::RunMethod("Photon.Pun", "PhotonNetwork", "get_LocalPlayer");
+
+            Array<Il2CppObject*>* sendArr = reinterpret_cast<Array<Il2CppObject*>*>(il2cpp_functions::array_new(classof(Il2CppObject*), 1));
+            sendArr->values[0] = localPlayer;
+            static Il2CppString* reportTagRPC = il2cpp_utils::createcsstr("ReportTagRPC", il2cpp_utils::StringType::Manual);
+            int target = 2;
+
+            il2cpp_utils::RunMethod(photonView, "RPC", reportTagRPC, target, sendArr);
+        }
+    }
+
+UnityEngine::GameObject* LoadLava(){
+
+    std::string path = "/sdcard/ModData/com.AnotherAxiom.GorillaTag/Mods/RisingLava/LavaAsset";
+    std::string path2 = "/sdcard/ModData/com.AnotherAxiom.GorillaTag/Mods/RisingLava/LavaVision";
+    auto loader = new CosmeticLoader(path, [&](std::string name, Il2CppObject* lavaAsset){
+                lava = (UnityEngine::GameObject*)lavaAsset;
+            }, "_Hat", il2cpp_utils::GetSystemType("UnityEngine", "GameObject"));
+    auto transform = lava->get_transform();
+    transform->set_position(UnityEngine::Vector3(-50, 10, -50));
+
+    auto visionLoader = new CosmeticLoader(path2, [&](std::string name, Il2CppObject* lavaAsset){
+                lavaVision = (UnityEngine::GameObject*)lavaAsset;
+            }, "_Hat", il2cpp_utils::GetSystemType("UnityEngine", "GameObject"));
+    lavaVision->get_transform()->set_position(UnityEngine::Vector3(-50, 10, -50));
+
+    return lava;
+}
+
 
 Il2CppObject* lavatransform;
+Il2CppObject* cubeTransform;
+
+bool lavaActive = false;
 
 MAKE_HOOK_OFFSETLESS(Start, void, Il2CppObject* self){
     Start(self);
-
-
-    auto lavaObj = *il2cpp_utils::RunMethod("UnityEngine", "GameObject", "CreatePrimitive", 3);
-    *il2cpp_utils::RunMethod(lavaObj, "set_layer", 11);
-    auto trigger = *il2cpp_utils::RunGenericMethod(lavaObj, "GetComponent", std::vector<Il2CppClass*>{il2cpp_utils::GetClassFromName("UnityEngine", "BoxCollider")});
-    *il2cpp_utils::RunMethod(trigger, "set_isTrigger", true);
-
-    CRASH_UNLESS(il2cpp_utils::RunGenericMethod<RisingLava::LavaManager*>(lavaObj, "AddComponent", std::vector<Il2CppClass*>{classof(RisingLava::LavaManager*)}));
-    CRASH_UNLESS(il2cpp_utils::RunGenericMethod<MapLoader::TagZone*>(lavaObj, "AddComponent", std::vector<Il2CppClass*>{classof(MapLoader::TagZone*)}));
-
-    lavatransform = *il2cpp_utils::RunMethod(lavaObj, "get_transform");
-    *il2cpp_utils::RunMethod(lavatransform, "set_position", (Vector3){-50,-2,-60});
-    *il2cpp_utils::RunMethod(lavatransform, "set_localScale", (Vector3){100,1,100});
-
-
-    auto forest = *il2cpp_utils::RunMethod("UnityEngine", "GameObject", "Find", il2cpp_utils::createcsstr("Forest"));
-    auto forestTransform = *il2cpp_utils::RunMethod(forest, "get_transform");
-    *il2cpp_utils::RunMethod(lavatransform, "SetParent", forestTransform);
+    
+    LoadLava();
+    lavaManager = lava->AddComponent<RisingLava::LavaManager*>();
+    lavaTransform = lava->get_transform();
 }
 
-MAKE_HOOK_OFFSETLESS(TagPlayer, void, Il2CppObject* self, Il2CppObject* player, Il2CppObject* player2){
-    TagPlayer(self, player, player2);
 
-    *il2cpp_utils::RunMethod(lavatransform, "set_localScale", (Vector3){100,1,100});
-}
-
+//Stolen from Map Loader
 MAKE_HOOK_OFFSETLESS(GorillaTagManager_ReportTag, void, Il2CppObject* self, Il2CppObject* taggedPlayer, Il2CppObject* taggingPlayer)
 {
     getLogger().info("Player Tagged!");
@@ -161,7 +222,75 @@ MAKE_HOOK_OFFSETLESS(PhotonNetworkController_OnJoinedRoom, void, Il2CppObject* s
     PhotonNetworkController_OnJoinedRoom(self);
 
     *il2cpp_utils::RunMethod(lavatransform, "set_localScale", (Vector3){100,200,100});
+
+    Il2CppObject* currentRoom = CRASH_UNLESS(il2cpp_utils::RunMethod("Photon.Pun", "PhotonNetwork", "get_CurrentRoom"));
+    Il2CppString* queue = UnityEngine::PlayerPrefs::GetString(il2cpp_utils::createcsstr("currentQueue", il2cpp_utils::StringType::Manual), il2cpp_utils::createcsstr("DEFAULT"));
+    std::string queuecpp = to_utf8(csstrtostr(queue));
+
+    if (currentRoom)
+    {
+        if (queuecpp.find("RISINGLAVA") != std::string::npos)
+        {
+            lavaActive = true;
+        }
+        else lavaActive = false;
+    }
+    else lavaActive = false;
+
+    auto photonNetworkController = GlobalNamespace::PhotonNetworkController::_get_instance();
+    auto gameType = to_utf8(csstrtostr(photonNetworkController->currentGameType));
 }
+
+void Tag(){
+    if(!canBeTagged) return;
+
+    TagLocalPlayer();
+    canBeTagged = false;
+
+    std::thread ReTag([&](){
+            for (int i = 0; i < 1000; i++)
+            {
+                usleep(1000);
+            }
+
+            canBeTagged = true;
+        });
+
+        ReTag.detach();
+}
+
+MAKE_HOOK_OFFSETLESS(Update, void, GorillaLocomotion::Player* self){
+    Update(self);
+
+    auto rig = GlobalNamespace::GorillaTagger::get_Instance()->offlineVRRig;
+    auto head = rig->head;
+    auto target = head->rigTarget;
+
+    if(lavaActive){
+        lava->SetActive(true);
+        UnityEngine::Vector3 plrPos = self->lastPosition;
+        UnityEngine::Vector3 lavaPos = lavaTransform->get_position();
+
+        if(lavaPos.y > target->get_position().y){
+            Tag();
+            lavaVision->SetActive(true);
+            
+            if(rig){
+                lavaVision->get_transform()->SetParent(target);
+                lavaVision->get_transform()->set_localPosition(UnityEngine::Vector3(0, 0, 0.3f));
+                lavaVision->get_transform()->set_localRotation(UnityEngine::Quaternion::Euler(0, 90, 0));
+            }
+        }
+        else{
+            lavaVision->SetActive(false);
+        }
+    }
+    else{
+        lava->SetActive(false);
+        lavaVision->SetActive(false);
+    }
+}
+
 
 // setup lets the modloader know the mod ID and version as defined in android.mk
 extern "C" void setup(ModInfo& info)
@@ -181,16 +310,18 @@ extern "C" void load()
 
     // best to call the init method
     il2cpp_functions::Init();
+    GorillaUI::Init();
     INFO("Installing hooks...");
 
     // installing a hook follows the principle of logger, hookname, findmethod, where findmethod takes args namespace, class, method, argcouny
     INSTALL_HOOK_OFFSETLESS(logger, Start, il2cpp_utils::FindMethodUnsafe("GorillaLocomotion", "Player", "Awake", 0));
-    INSTALL_HOOK_OFFSETLESS(logger, TagPlayer, il2cpp_utils::FindMethodUnsafe("", "Gorilla1v1TagManager", "ReportTag", 2));
+    INSTALL_HOOK_OFFSETLESS(logger, Update, il2cpp_utils::FindMethodUnsafe("GorillaLocomotion", "Player", "Update", 0));
     INSTALL_HOOK_OFFSETLESS(logger, GorillaTagManager_ReportTag, il2cpp_utils::FindMethodUnsafe("", "GorillaTagManager", "ReportTag", 2));
     INSTALL_HOOK_OFFSETLESS(logger, PhotonNetworkController_OnJoinedRoom, il2cpp_utils::FindMethodUnsafe("", "PhotonNetworkController", "OnJoinedRoom", 0));
     custom_types::Register::RegisterType<RisingLava::LavaManager>();
     custom_types::Register::RegisterType<MapLoader::GorillaMapTriggerBase>();
     custom_types::Register::RegisterType<MapLoader::TagZone>();
+    GorillaUI::CustomQueues::add_queue("RISINGLAVA", "Rising Lava", "Lava is rising, touch it and you get caught.");
 
     INFO("Installed hooks!");
 }
